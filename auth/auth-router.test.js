@@ -128,3 +128,37 @@ describe("POST /api/auth/login", () => {
     expect(thirdRes.status).toBe(400);
   });
 });
+
+describe("GET /restricted", () => {
+  const ROUTE = "/api/auth/restricted";
+
+  it("should allow a logged in user to access it", async () => {
+    try {
+      const userInput = { username: "matt", password: "notsafe" };
+      const res1 = await request(server)
+        .post("/api/auth/register")
+        .send(userInput);
+
+      const { token } = res1.body;
+
+      const res = await request(server)
+        .get(ROUTE)
+        .set("authorization", token);
+
+      expect(res.status).toBe(200);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+
+  it("it should send a 401 for an unauthorized user", async () => {
+    try {
+      const res = await request(server).get(ROUTE);
+
+      expect(res.status).toBe(401);
+      expect(res.body.you).toBe("shall not pass!");
+    } catch (err) {
+      console.error(err);
+    }
+  });
+});

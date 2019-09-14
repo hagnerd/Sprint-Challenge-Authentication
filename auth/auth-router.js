@@ -4,6 +4,7 @@ const jwt = require("jsonwebtoken");
 
 const db = require("../database/dbConfig");
 const secret = require("../secret");
+const authenticationMiddleware = require("../auth/authenticate-middleware");
 
 function validateUserInput(req, res, next) {
   const { username, password } = req.body;
@@ -63,6 +64,12 @@ router.post("/login", validateUserInput, async (req, res) => {
       message: err.message
     });
   }
+});
+
+router.get("/restricted", authenticationMiddleware, (_req, res) => {
+  res.status(200).json({
+    message: "Welcome batman"
+  });
 });
 
 module.exports = router;
