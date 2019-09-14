@@ -37,8 +37,32 @@ router.post("/register", validateUserInput, async (req, res) => {
   }
 });
 
-router.post("/login", (req, res) => {
-  // implement login
+router.post("/login", validateUserInput, async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const [user] = await db
+      .select("*")
+      .from("users")
+      .where({ username });
+
+    if (user && bcrypt.compareSync(password, user.password)) {
+      const token = jwt.sign({ sub: user.id }, secret(), { expiresIn: "8h" });
+
+      res.status(200).json({
+        token
+      });
+    } else {
+      res.status(401).json({
+        message: "Incorrect username & password combination"
+      });
+    }
+  } catch (err) {
+    res.status(500).json({
+      error: "Internal server error",
+      message: err.message
+    });
+  }
 });
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const request = require("supertest");
+const jwt = require("jsonwebtoken");
 const server = require("../api/server");
 const db = require("../database/dbConfig");
 
@@ -61,5 +62,69 @@ describe("POST /register", () => {
 
     const { token } = res.body;
     expect(token).not.toBe(undefined);
+  });
+});
+
+describe("POST /api/auth/login", () => {
+  const ROUTE = "/api/auth/login";
+
+  beforeEach(async () => {
+    await request(server)
+      .post("/api/auth/register")
+      .send({ username: "user1", password: "password123" });
+  });
+
+  it("should return 200 when user successfully logs in", async () => {
+    const userInput = { username: "user1", password: "password123" };
+
+    const res = await request(server)
+      .post(ROUTE)
+      .send(userInput);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("should return a token with the user's id when a user successfully logs in", async () => {
+    const userInput = { username: "user1", password: "password123" };
+
+    const res = await request(server)
+      .post(ROUTE)
+      .send(userInput);
+
+    const decoded = jwt.decode(res.body.token);
+
+    expect(decoded.sub).toBe(1);
+  });
+
+  it("should send a 401 when the user provides incorrect credentials", async () => {
+    const userInput = { username: "user1", password: "badpassword" };
+
+    const res = await request(server)
+      .post(ROUTE)
+      .send(userInput);
+
+    expect(res.status).toBe(401);
+  });
+
+  it("should send a 400 when the user passes incomplete input", async () => {
+    const missingPassword = { username: "george" };
+    const missingUsername = { password: "fred" };
+    const missingBoth = {};
+
+    const firstRes = await request(server)
+      .post("/api/auth/login")
+      .send(missingPassword);
+
+    const secondRes = await request(server)
+      .post("/api/auth/login")
+      .send(missingUsername);
+
+    const thirdRes = await request(server)
+      .post("/api/auth/login")
+      .send(missingBoth);
+
+    expect(firstRes.status).toBe(400);
+    expect(secondRes.status).toBe(400);
+    expect(thirdRes.status).toBe(400);
   });
 });
